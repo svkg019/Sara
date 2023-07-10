@@ -16,15 +16,26 @@ def blue(str):
 
 
 initial_prompt = "You are a friendly and helpful chatbot and your name is Sara"
-messages = [{"role": "system", "content": initial_prompt}]
+history = [{"role": "system", "content": initial_prompt}]
 
 while True:
     try:
         user_input = input(blue("You: "))
-        messages.append({"role": "user", "content": user_input})
-        response = openai.ChatCompletion.create(model="gpt-4",max_tokens=500,messages=messages)
-        messages.append(response.choices[0].message.to_dict())
-        print(green("Sara: "), response.choices[0].message.content)
+        history.append({"role": "user", "content": user_input})
+        response = openai.ChatCompletion.create(
+            model="gpt-4", max_tokens=500, stream=True, messages=history
+        )
+        print(green("Sara:"), end=" ")
+        for chunk in response:
+            if "role" in chunk["choices"][0]["delta"]:
+                continue
+            elif "content" in chunk["choices"][0]["delta"]:
+                text = chunk["choices"][0]["delta"]["content"]
+                history.append({"role": "assistant", "content": text})
+                print(green(text), end="", flush=True)
+
+        print()
+
     except KeyboardInterrupt:
         print("Exiting...")
         break
